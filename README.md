@@ -1,19 +1,28 @@
 # Multiplication Master
 
-A fast math practice app designed to help build multiplication fluency (1x1 through 12x12) using spaced repetition and gamification.
+A fast math practice app designed to help build multiplication fluency (2x2 through 12x12) using spaced repetition, gamification, and reward tracking.
 
 ## Features
 
 ### Play Tab
-- **5-Minute Sessions**: Timed practice sessions to maintain focus and engagement
-- **Spaced Repetition**: The app intelligently selects problems based on which multiplication tables need the most practice
+- **5-Minute Sessions**: Timed practice sessions (timer hidden to reduce stress)
+- **Category Selection**: Choose which multiplication tables to practice (Easy, Medium, Hard)
+- **Spaced Repetition**: The app intelligently selects problems based on which tables need the most practice
 - **Streak Counter**: Track consecutive correct answers for motivation
 - **Immediate Feedback**: Know right away if your answer is correct
+- **Keyboard-Friendly**: Auto-focus on answer input, press Enter to submit
 
 ### Progress Tab
-- **Mastery Tracking**: See your mastery score (0-100) for each multiplication table (1's through 12's)
-- **Trophy System**: Earn a permanent trophy when you reach 100/100 mastery on any table
-- **Stats**: View correct/total attempts for each table
+- **Mastery Tracking**: See your mastery score (0-100) for each multiplication table (2's through 12's)
+- **Sliding Window Scoring**: Based on last 10 answers (10 points each)
+- **Trophy System**: Earn a permanent trophy when you reach 100/100 mastery
+- **Reward Tracking**: Earn $0.50 (Easy), $1.00 (Medium), or $2.00 (Hard) per mastered category
+- **Speed Stats**: View average response time for correct answers
+- **Difficulty Levels**: Easy (2's, 3's, 4's, 5's, 10's), Medium (6's-9's), Hard (11's-12's)
+
+### Parent Mode
+- **Password Protected**: Secure parent mode to manually award trophies
+- **Trophy Management**: Award or remove trophies for any category
 
 ### Data Persistence
 - All progress is saved to your browser's local storage
@@ -72,10 +81,28 @@ Tested on:
 
 ## Deployment
 
-Simply open `index.html` in a web browser. For iPad deployment:
-- Upload the file to a web server, or
-- Use a service like GitHub Pages, Netlify, or Vercel for hosting, or
-- Open the file directly from Files app (if supported by browser)
+### Deploy to Vercel (Recommended)
+
+This app is designed to be deployed on Vercel:
+
+1. Fork or clone this repository
+2. Install Vercel CLI: `npm install -g vercel`
+3. Deploy: `vercel --prod`
+4. Set the `PARENT_PASSCODE` environment variable in your Vercel project settings for Parent Mode
+
+The build script will automatically inject the passcode during deployment.
+
+### Run Locally
+
+For local development or testing:
+
+1. Clone this repository
+2. Open `index.html` directly in your web browser
+3. Note: Parent Mode will default to passcode `0000` when running locally (no environment variable set)
+
+### Environment Variables
+
+- `PARENT_PASSCODE`: Set this in Vercel to configure the Parent Mode passcode (defaults to `0000` if not set)
 
 ## License
 
