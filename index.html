@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiplication Master - Fast Math Practice for Oliver</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+                sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Icon components (simplified)
+        const Trophy = ({ className, size = 24, fill = "none" }) => (
+            <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                <path d="M4 22h16" />
+                <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+                <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+                <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+            </svg>
+        );
+
+        const Play = ({ className, size = 24 }) => (
+            <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
+        );
+
+        const BarChart3 = ({ className, size = 24 }) => (
+            <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 3v18h18" />
+                <path d="M18 17V9" />
+                <path d="M13 17V5" />
+                <path d="M8 17v-3" />
+            </svg>
+        );
+
+        const Timer = ({ className, size = 24 }) => (
+            <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="10" x2="14" y1="2" y2="2" />
+                <line x1="12" x2="12" y1="14" y2="8" />
+                <circle cx="12" cy="14" r="8" />
+            </svg>
+        );
+
+        const Zap = ({ className, size = 24 }) => (
+            <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+        );
+
+        const MultiplicationMaster = () => {
+            const [activeTab, setActiveTab] = useState('play');
+            const [gameActive, setGameActive] = useState(false);
+            const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
+            const [currentProblem, setCurrentProblem] = useState(null);
+            const [userAnswer, setUserAnswer] = useState('');
+            const [feedback, setFeedback] = useState('');
+            const [streak, setStreak] = useState(0);
+            const [selectedCategories, setSelectedCategories] = useState([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+            const [showParentMode, setShowParentMode] = useState(false);
+            const [parentPasscode, setParentPasscode] = useState('');
+            const [parentModeUnlocked, setParentModeUnlocked] = useState(false);
+            const [problemStartTime, setProblemStartTime] = useState(null);
+            const answerInputRef = React.useRef(null);
+
+            // Load progress from localStorage
+            const [progress, setProgress] = useState(() => {
+                const saved = localStorage.getItem('multiplicationProgress');
+                if (saved) {
+                    return JSON.parse(saved);
+                }
+                // Initialize progress for tables 2-12 (1's excluded)
+                const initial = {};
+                for (let i = 2; i <= 12; i++) {
+                    initial[i] = {
+                        correct: 0,
+                        total: 0,
+                        mastery: 0,
+                        hasTrophy: false,
+                        lastPracticed: null,
+                        problemHistory: {}, // Track individual problem performance
+                        recentAnswers: [], // Track last 10 answers (true/false)
+                        responseTimes: [] // Track time in seconds for correct answers
+                    };
+                }
+                return initial;
+            });
+
+            // Save progress to localStorage whenever it changes
+            useEffect(() => {
+                localStorage.setItem('multiplicationProgress', JSON.stringify(progress));
+            }, [progress]);
+
+            // Timer countdown
+            useEffect(() => {
+                if (gameActive && timeLeft > 0) {
+                    const timer = setInterval(() => {
+                        setTimeLeft(prev => prev - 1);
+                    }, 1000);
+                    return () => clearInterval(timer);
+                } else if (timeLeft === 0 && gameActive) {
+                    endGame();
+                }
+            }, [gameActive, timeLeft]);
+
+            // Auto-focus answer input when new problem appears or feedback clears
+            useEffect(() => {
+                if (gameActive && currentProblem && !feedback && answerInputRef.current) {
+                    answerInputRef.current.focus();
+                }
+            }, [gameActive, currentProblem, feedback]);
+
+            // Generate problem using spaced repetition
+            const generateProblem = () => {
+                // Only use selected categories
+                const categoriesToUse = selectedCategories.length > 0 ? selectedCategories : [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+                
+                // Weight selection based on mastery (lower mastery = higher probability)
+                const weights = [];
+                for (const i of categoriesToUse) {
+                    const masteryScore = progress[i].mastery;
+                    const weight = masteryScore < 100 ? (100 - masteryScore) + 20 : 5;
+                    weights.push({ table: i, weight });
+                }
+
+                const totalWeight = weights.reduce((sum, w) => sum + w.weight, 0);
+                let random = Math.random() * totalWeight;
+                let selectedTable = categoriesToUse[0];
+
+                for (const w of weights) {
+                    random -= w.weight;
+                    if (random <= 0) {
+                        selectedTable = w.table;
+                        break;
+                    }
+                }
+
+                // Pick multiplier from 2-12, but ensure the max(table, multiplier) is in selected categories
+                // This means: if selectedTable is the larger number, multiplier can be anything 2-12
+                // If we want multiplier to be larger, it must be from selected categories
+                let multiplier;
+                if (Math.random() < 0.5) {
+                    // selectedTable is the larger number - multiplier can be 2 to selectedTable
+                    multiplier = Math.floor(Math.random() * (selectedTable - 1)) + 2;
+                } else {
+                    // multiplier should be >= selectedTable, pick from selected categories that are >= selectedTable
+                    const largerCategories = categoriesToUse.filter(c => c >= selectedTable);
+                    if (largerCategories.length > 0) {
+                        multiplier = largerCategories[Math.floor(Math.random() * largerCategories.length)];
+                    } else {
+                        multiplier = Math.floor(Math.random() * (selectedTable - 1)) + 2;
+                    }
+                }
+
+                return {
+                    table: selectedTable,
+                    multiplier,
+                    answer: selectedTable * multiplier
+                };
+            };
+
+            const startGame = () => {
+                setGameActive(true);
+                setTimeLeft(300);
+                setStreak(0);
+                setFeedback('');
+                setCurrentProblem(generateProblem());
+                setProblemStartTime(Date.now());
+            };
+
+            const endGame = () => {
+                setGameActive(false);
+                setCurrentProblem(null);
+                setUserAnswer('');
+                setFeedback('Great session! Check your progress.');
+                setTimeout(() => setFeedback(''), 3000);
+            };
+
+            const checkAnswer = () => {
+                if (!currentProblem || userAnswer === '') return;
+
+                const isCorrect = parseInt(userAnswer) === currentProblem.answer;
+                // Classify problem by the higher of the two numbers
+                const table = Math.max(currentProblem.table, currentProblem.multiplier);
+
+                // Calculate response time in seconds
+                const responseTime = problemStartTime ? (Date.now() - problemStartTime) / 1000 : null;
+
+                // Update progress
+                setProgress(prev => {
+                    const updated = { ...prev };
+                    const tableProgress = { ...updated[table] };
+
+                    // Initialize arrays if they don't exist (for backward compatibility)
+                    if (!tableProgress.recentAnswers) {
+                        tableProgress.recentAnswers = [];
+                    }
+                    if (!tableProgress.responseTimes) {
+                        tableProgress.responseTimes = [];
+                    }
+
+                    tableProgress.total += 1;
+                    if (isCorrect) {
+                        tableProgress.correct += 1;
+
+                        // Track individual problem (always use format: larger x smaller)
+                        const num1 = currentProblem.table;
+                        const num2 = currentProblem.multiplier;
+                        const problemKey = `${Math.max(num1, num2)}x${Math.min(num1, num2)}`;
+                        tableProgress.problemHistory[problemKey] =
+                            (tableProgress.problemHistory[problemKey] || 0) + 1;
+
+                        // Store response time for correct answers
+                        if (responseTime !== null) {
+                            tableProgress.responseTimes.push(responseTime);
+                        }
+                    }
+
+                    // Add answer to recent answers array
+                    tableProgress.recentAnswers.push(isCorrect);
+                    
+                    // Keep only the last 10 answers
+                    if (tableProgress.recentAnswers.length > 10) {
+                        tableProgress.recentAnswers = tableProgress.recentAnswers.slice(-10);
+                    }
+
+                    // Calculate mastery based on last 10 answers (10 points each)
+                    // If fewer than 10 answers, treat missing ones as 0
+                    const correctInLastTen = tableProgress.recentAnswers.filter(answer => answer).length;
+                    tableProgress.mastery = correctInLastTen * 10;
+
+                    // Award trophy at 100 mastery (can't be lost)
+                    if (tableProgress.mastery === 100 && tableProgress.total >= 10) {
+                        tableProgress.hasTrophy = true;
+                    }
+
+                    tableProgress.lastPracticed = new Date().toISOString();
+                    updated[table] = tableProgress;
+
+                    return updated;
+                });
+
+                if (isCorrect) {
+                    setStreak(prev => prev + 1);
+                    setFeedback('✓ Correct!');
+                } else {
+                    setStreak(0);
+                    setFeedback(`✗ Not quite. ${currentProblem.table} × ${currentProblem.multiplier} = ${currentProblem.answer}`);
+                }
+
+                // Move to next problem after short delay
+                setTimeout(() => {
+                    if (gameActive) {
+                        setCurrentProblem(generateProblem());
+                        setUserAnswer('');
+                        setFeedback('');
+                        setProblemStartTime(Date.now());
+                    }
+                }, isCorrect ? 800 : 2000);
+            };
+
+            const formatTime = (seconds) => {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            };
+
+            const handleKeyPress = (e) => {
+                if (e.key === 'Enter' && !feedback) {
+                    checkAnswer();
+                }
+            };
+
+            const toggleCategory = (table) => {
+                setSelectedCategories(prev => {
+                    if (prev.includes(table)) {
+                        return prev.filter(t => t !== table);
+                    } else {
+                        return [...prev, table].sort((a, b) => a - b);
+                    }
+                });
+            };
+
+            const selectAllCategories = () => {
+                setSelectedCategories([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+            };
+
+            const deselectAllCategories = () => {
+                setSelectedCategories([]);
+            };
+
+            const selectDifficulty = (difficulty) => {
+                const easy = [2, 3, 4, 5, 10];
+                const medium = [6, 7, 8, 9];
+                const hard = [11, 12];
+                
+                let categoriesToAdd = [];
+                if (difficulty === 'easy') categoriesToAdd = easy;
+                else if (difficulty === 'medium') categoriesToAdd = medium;
+                else if (difficulty === 'hard') categoriesToAdd = hard;
+                
+                setSelectedCategories(prev => {
+                    const combined = [...new Set([...prev, ...categoriesToAdd])];
+                    return combined.sort((a, b) => a - b);
+                });
+            };
+
+            const deselectDifficulty = (difficulty) => {
+                const easy = [2, 3, 4, 5, 10];
+                const medium = [6, 7, 8, 9];
+                const hard = [11, 12];
+                
+                let categoriesToRemove = [];
+                if (difficulty === 'easy') categoriesToRemove = easy;
+                else if (difficulty === 'medium') categoriesToRemove = medium;
+                else if (difficulty === 'hard') categoriesToRemove = hard;
+                
+                setSelectedCategories(prev => prev.filter(t => !categoriesToRemove.includes(t)));
+            };
+
+            const getRewardAmount = (table) => {
+                const easy = [2, 3, 4, 5, 10];
+                const medium = [6, 7, 8, 9];
+                const hard = [11, 12];
+                
+                if (easy.includes(table)) return 0.50;
+                if (medium.includes(table)) return 1.00;
+                if (hard.includes(table)) return 2.00;
+                return 0;
+            };
+
+            const calculateTotalRewards = () => {
+                let total = 0;
+                [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].forEach(table => {
+                    if (progress[table] && progress[table].mastery === 100) {
+                        total += getRewardAmount(table);
+                    }
+                });
+                return total;
+            };
+
+            const getAverageResponseTime = (table) => {
+                const tableProgress = progress[table];
+                if (!tableProgress || !tableProgress.responseTimes || tableProgress.responseTimes.length === 0) {
+                    return null;
+                }
+                const sum = tableProgress.responseTimes.reduce((acc, time) => acc + time, 0);
+                const avg = sum / tableProgress.responseTimes.length;
+                return avg;
+            };
+
+            const openParentMode = () => {
+                setShowParentMode(true);
+                setParentPasscode('');
+                setParentModeUnlocked(false);
+            };
+
+            const closeParentMode = () => {
+                setShowParentMode(false);
+                setParentPasscode('');
+                setParentModeUnlocked(false);
+            };
+
+            const checkPasscode = () => {
+                // Get passcode from environment variable (set at build time) or default to '0000'
+                const correctPasscode = '__PARENT_PASSCODE__';
+                if (parentPasscode === correctPasscode) {
+                    setParentModeUnlocked(true);
+                } else {
+                    alert('Incorrect passcode');
+                    setParentPasscode('');
+                }
+            };
+
+            const toggleTrophy = (table) => {
+                setProgress(prev => {
+                    const updated = { ...prev };
+                    updated[table] = {
+                        ...updated[table],
+                        hasTrophy: !updated[table].hasTrophy,
+                        mastery: !updated[table].hasTrophy ? 100 : updated[table].mastery
+                    };
+                    return updated;
+                });
+            };
+
+            const resetProgress = () => {
+                if (confirm('Are you sure you want to reset all progress? This cannot be undone.')) {
+                    const initial = {};
+                    for (let i = 2; i <= 12; i++) {
+                        initial[i] = {
+                            correct: 0,
+                            total: 0,
+                            mastery: 0,
+                            hasTrophy: false,
+                            lastPracticed: null,
+                            problemHistory: {},
+                            recentAnswers: [],
+                            responseTimes: []
+                        };
+                    }
+                    setProgress(initial);
+                    localStorage.setItem('multiplicationProgress', JSON.stringify(initial));
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+                    <div className="max-w-4xl mx-auto">
+                        {/* Header */}
+                        <div className="bg-white rounded-lg shadow-lg p-6 mb-4">
+                            <div className="flex items-center justify-between flex-wrap gap-4">
+                                <div className="flex items-center gap-3">
+                                    <Zap className="text-yellow-500" size={32} />
+                                    <h1 className="text-3xl font-bold text-gray-800">Multiplication Master</h1>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    {streak > 0 && gameActive && (
+                                        <div className="flex items-center gap-2 bg-green-100 px-4 py-2 rounded-full">
+                                            <span className="text-green-700 font-bold">🔥 {streak} streak</span>
+                                        </div>
+                                    )}
+                                    <button
+                                        onClick={openParentMode}
+                                        className="text-sm bg-purple-100 hover:bg-purple-200 text-purple-700 font-semibold py-2 px-4 rounded-lg transition-colors"
+                                    >
+                                        👤 Parent Mode
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Tabs */}
+                        <div className="bg-white rounded-lg shadow-lg mb-4">
+                            <div className="flex border-b">
+                                <button
+                                    onClick={() => setActiveTab('play')}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-4 font-semibold transition-colors ${
+                                        activeTab === 'play'
+                                            ? 'text-indigo-600 border-b-2 border-indigo-600'
+                                            : 'text-gray-500 hover:text-gray-700'
+                                    }`}
+                                >
+                                    <Play size={20} />
+                                    Play
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('progress')}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-4 font-semibold transition-colors ${
+                                        activeTab === 'progress'
+                                            ? 'text-indigo-600 border-b-2 border-indigo-600'
+                                            : 'text-gray-500 hover:text-gray-700'
+                                    }`}
+                                >
+                                    <BarChart3 size={20} />
+                                    Progress
+                                    <span className="ml-2 bg-green-100 text-green-700 px-2 py-1 rounded-full text-sm font-bold">
+                                        ${calculateTotalRewards().toFixed(2)}
+                                    </span>
+                                </button>
+                            </div>
+
+                            {/* Play Tab */}
+                            {activeTab === 'play' && (
+                                <div className="p-8">
+                                    {!gameActive ? (
+                                        <div>
+                                            <div className="text-center mb-6">
+                                                <h2 className="text-2xl font-bold text-gray-800 mb-4">Ready to practice?</h2>
+                                                <p className="text-gray-600 mb-2">
+                                                    You'll have 5 minutes to solve as many problems as you can.
+                                                </p>
+                                                <p className="text-gray-600 mb-4">
+                                                    Select which multiplication tables you want to practice:
+                                                </p>
+                                            </div>
+
+                                            {/* Category Selection */}
+                                            <div className="max-w-3xl mx-auto mb-6">
+                                                <div className="flex justify-center gap-2 mb-6">
+                                                    <button
+                                                        onClick={selectAllCategories}
+                                                        className="text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-1 px-3 rounded transition-colors"
+                                                    >
+                                                        Select All
+                                                    </button>
+                                                    <button
+                                                        onClick={deselectAllCategories}
+                                                        className="text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-1 px-3 rounded transition-colors"
+                                                    >
+                                                        Deselect All
+                                                    </button>
+                                                </div>
+
+                                                {/* Easy */}
+                                                <div className="mb-6">
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <h3 className="text-lg font-bold text-green-700">Easy</h3>
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                onClick={() => selectDifficulty('easy')}
+                                                                className="text-xs bg-green-100 hover:bg-green-200 text-green-700 font-semibold py-1 px-2 rounded transition-colors"
+                                                            >
+                                                                Select
+                                                            </button>
+                                                            <button
+                                                                onClick={() => deselectDifficulty('easy')}
+                                                                className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold py-1 px-2 rounded transition-colors"
+                                                            >
+                                                                Deselect
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
+                                                        {[2, 3, 4, 5, 10].map(table => (
+                                                            <label
+                                                                key={table}
+                                                                className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                                                                    selectedCategories.includes(table)
+                                                                        ? 'border-green-500 bg-green-50'
+                                                                        : 'border-gray-200 bg-white hover:border-gray-300'
+                                                                }`}
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={selectedCategories.includes(table)}
+                                                                    onChange={() => toggleCategory(table)}
+                                                                    className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+                                                                />
+                                                                <span className="font-bold text-gray-800">{table}'s</span>
+                                                            </label>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Medium */}
+                                                <div className="mb-6">
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <h3 className="text-lg font-bold text-orange-700">Medium</h3>
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                onClick={() => selectDifficulty('medium')}
+                                                                className="text-xs bg-orange-100 hover:bg-orange-200 text-orange-700 font-semibold py-1 px-2 rounded transition-colors"
+                                                            >
+                                                                Select
+                                                            </button>
+                                                            <button
+                                                                onClick={() => deselectDifficulty('medium')}
+                                                                className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold py-1 px-2 rounded transition-colors"
+                                                            >
+                                                                Deselect
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                                        {[6, 7, 8, 9].map(table => (
+                                                            <label
+                                                                key={table}
+                                                                className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                                                                    selectedCategories.includes(table)
+                                                                        ? 'border-orange-500 bg-orange-50'
+                                                                        : 'border-gray-200 bg-white hover:border-gray-300'
+                                                                }`}
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={selectedCategories.includes(table)}
+                                                                    onChange={() => toggleCategory(table)}
+                                                                    className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
+                                                                />
+                                                                <span className="font-bold text-gray-800">{table}'s</span>
+                                                            </label>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Hard */}
+                                                <div className="mb-6">
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <h3 className="text-lg font-bold text-red-700">Hard</h3>
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                onClick={() => selectDifficulty('hard')}
+                                                                className="text-xs bg-red-100 hover:bg-red-200 text-red-700 font-semibold py-1 px-2 rounded transition-colors"
+                                                            >
+                                                                Select
+                                                            </button>
+                                                            <button
+                                                                onClick={() => deselectDifficulty('hard')}
+                                                                className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 font-semibold py-1 px-2 rounded transition-colors"
+                                                            >
+                                                                Deselect
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        {[11, 12].map(table => (
+                                                            <label
+                                                                key={table}
+                                                                className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                                                                    selectedCategories.includes(table)
+                                                                        ? 'border-red-500 bg-red-50'
+                                                                        : 'border-gray-200 bg-white hover:border-gray-300'
+                                                                }`}
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={selectedCategories.includes(table)}
+                                                                    onChange={() => toggleCategory(table)}
+                                                                    className="w-4 h-4 text-red-600 rounded focus:ring-red-500"
+                                                                />
+                                                                <span className="font-bold text-gray-800">{table}'s</span>
+                                                            </label>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="text-center">
+                                                <button
+                                                    onClick={startGame}
+                                                    disabled={selectedCategories.length === 0}
+                                                    className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-4 px-8 rounded-lg text-xl transition-colors inline-flex items-center gap-2"
+                                                >
+                                                    <Play size={24} />
+                                                    Start Session
+                                                </button>
+                                                {selectedCategories.length === 0 && (
+                                                    <p className="mt-3 text-orange-600 text-sm font-semibold">
+                                                        Please select at least one category
+                                                    </p>
+                                                )}
+                                                {feedback && (
+                                                    <div className="mt-4 text-green-600 font-semibold">
+                                                        {feedback}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-6">
+                                            {/* Problem */}
+                                            {currentProblem && (
+                                                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-8 text-center">
+                                                    <div className="text-5xl font-bold text-gray-800 mb-6">
+                                                        {currentProblem.table} × {currentProblem.multiplier} = ?
+                                                    </div>
+
+                                                    <input
+                                                        ref={answerInputRef}
+                                                        type="number"
+                                                        value={userAnswer}
+                                                        onChange={(e) => setUserAnswer(e.target.value)}
+                                                        onKeyPress={handleKeyPress}
+                                                        className="text-3xl font-bold text-center border-4 border-indigo-300 rounded-lg p-4 w-48 mx-auto block focus:outline-none focus:border-indigo-500"
+                                                        placeholder="?"
+                                                        autoFocus
+                                                        disabled={feedback !== ''}
+                                                    />
+
+                                                    <button
+                                                        onClick={checkAnswer}
+                                                        disabled={userAnswer === '' || feedback !== ''}
+                                                        className="mt-6 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white font-bold py-3 px-8 rounded-lg text-xl transition-colors"
+                                                    >
+                                                        Check Answer
+                                                    </button>
+
+                                                    {feedback && (
+                                                        <div className={`mt-6 text-xl font-bold ${
+                                                            feedback.startsWith('✓') ? 'text-green-600' : 'text-orange-600'
+                                                        }`}>
+                                                            {feedback}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            <button
+                                                onClick={endGame}
+                                                className="text-gray-600 hover:text-gray-800 underline block mx-auto"
+                                            >
+                                                End session early
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Progress Tab */}
+                            {activeTab === 'progress' && (
+                                <div className="p-8">
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-4">Your Mastery</h2>
+                                    
+                                    {/* Total Rewards */}
+                                    <div className="bg-gradient-to-r from-green-100 to-yellow-100 border-2 border-yellow-400 rounded-xl p-6 mb-6">
+                                        <div className="text-center">
+                                            <div className="text-sm font-semibold text-gray-600 mb-1">Total Rewards Earned</div>
+                                            <div className="text-4xl font-bold text-green-700">
+                                                ${calculateTotalRewards().toFixed(2)}
+                                            </div>
+                                            <div className="text-xs text-gray-500 mt-2">
+                                                Master categories to earn rewards! 💰
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Easy */}
+                                    <div className="mb-8">
+                                        <h3 className="text-xl font-bold text-green-700 mb-4">Easy</h3>
+                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                                            {[2, 3, 4, 5, 10].map(table => {
+                                                const tableProgress = progress[table];
+                                                const mastery = tableProgress.mastery;
+                                                const hasTrophy = tableProgress.hasTrophy;
+                                                const rewardAmount = getRewardAmount(table);
+                                                const isEarned = mastery === 100;
+                                                const avgTime = getAverageResponseTime(table);
+
+                                                return (
+                                                    <div
+                                                        key={table}
+                                                        className={`relative border-2 rounded-xl p-4 transition-all ${
+                                                            hasTrophy
+                                                                ? 'border-yellow-400 bg-gradient-to-br from-yellow-50 to-yellow-100'
+                                                                : 'border-green-200 bg-green-50 hover:border-green-300'
+                                                        }`}
+                                                    >
+                                                        {hasTrophy && (
+                                                            <div className="absolute -top-3 -right-3">
+                                                                <Trophy className="text-yellow-500" size={32} fill="currentColor" />
+                                                            </div>
+                                                        )}
+
+                                                        <div className="text-center">
+                                                            <div className="text-2xl font-bold text-gray-800 mb-2">
+                                                                {table}'s
+                                                            </div>
+
+                                                            <div className="relative w-full h-3 bg-gray-200 rounded-full overflow-hidden mb-2">
+                                                                <div
+                                                                    className={`h-full transition-all ${
+                                                                        mastery === 100 ? 'bg-yellow-500' : 'bg-green-500'
+                                                                    }`}
+                                                                    style={{ width: `${mastery}%` }}
+                                                                />
+                                                            </div>
+
+                                                            <div className="text-lg font-bold text-gray-700">
+                                                                {mastery}/100
+                                                            </div>
+
+                                                            {tableProgress.total > 0 && (
+                                                                <div className="text-xs text-gray-600 mt-1">
+                                                                    ✓ {tableProgress.correct}/{tableProgress.total}
+                                                                    {avgTime !== null && `, ⏱ ${avgTime.toFixed(1)}s`}
+                                                                </div>
+                                                            )}
+
+                                                            <div className={`mt-2 text-sm font-bold ${
+                                                                isEarned ? 'text-green-700' : 'text-gray-500'
+                                                            }`}>
+                                                                {isEarned ? '✓ ' : ''}${rewardAmount.toFixed(2)} {isEarned ? 'earned!' : 'reward'}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* Medium */}
+                                    <div className="mb-8">
+                                        <h3 className="text-xl font-bold text-orange-700 mb-4">Medium</h3>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                            {[6, 7, 8, 9].map(table => {
+                                                const tableProgress = progress[table];
+                                                const mastery = tableProgress.mastery;
+                                                const hasTrophy = tableProgress.hasTrophy;
+                                                const rewardAmount = getRewardAmount(table);
+                                                const isEarned = mastery === 100;
+                                                const avgTime = getAverageResponseTime(table);
+
+                                                return (
+                                                    <div
+                                                        key={table}
+                                                        className={`relative border-2 rounded-xl p-4 transition-all ${
+                                                            hasTrophy
+                                                                ? 'border-yellow-400 bg-gradient-to-br from-yellow-50 to-yellow-100'
+                                                                : 'border-orange-200 bg-orange-50 hover:border-orange-300'
+                                                        }`}
+                                                    >
+                                                        {hasTrophy && (
+                                                            <div className="absolute -top-3 -right-3">
+                                                                <Trophy className="text-yellow-500" size={32} fill="currentColor" />
+                                                            </div>
+                                                        )}
+
+                                                        <div className="text-center">
+                                                            <div className="text-2xl font-bold text-gray-800 mb-2">
+                                                                {table}'s
+                                                            </div>
+
+                                                            <div className="relative w-full h-3 bg-gray-200 rounded-full overflow-hidden mb-2">
+                                                                <div
+                                                                    className={`h-full transition-all ${
+                                                                        mastery === 100 ? 'bg-yellow-500' : 'bg-orange-500'
+                                                                    }`}
+                                                                    style={{ width: `${mastery}%` }}
+                                                                />
+                                                            </div>
+
+                                                            <div className="text-lg font-bold text-gray-700">
+                                                                {mastery}/100
+                                                            </div>
+
+                                                            {tableProgress.total > 0 && (
+                                                                <div className="text-xs text-gray-600 mt-1">
+                                                                    ✓ {tableProgress.correct}/{tableProgress.total}
+                                                                    {avgTime !== null && `, ⏱ ${avgTime.toFixed(1)}s`}
+                                                                </div>
+                                                            )}
+
+                                                            <div className={`mt-2 text-sm font-bold ${
+                                                                isEarned ? 'text-green-700' : 'text-gray-500'
+                                                            }`}>
+                                                                {isEarned ? '✓ ' : ''}${rewardAmount.toFixed(2)} {isEarned ? 'earned!' : 'reward'}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* Hard */}
+                                    <div className="mb-8">
+                                        <h3 className="text-xl font-bold text-red-700 mb-4">Hard</h3>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {[11, 12].map(table => {
+                                                const tableProgress = progress[table];
+                                                const mastery = tableProgress.mastery;
+                                                const hasTrophy = tableProgress.hasTrophy;
+                                                const rewardAmount = getRewardAmount(table);
+                                                const isEarned = mastery === 100;
+                                                const avgTime = getAverageResponseTime(table);
+
+                                                return (
+                                                    <div
+                                                        key={table}
+                                                        className={`relative border-2 rounded-xl p-4 transition-all ${
+                                                            hasTrophy
+                                                                ? 'border-yellow-400 bg-gradient-to-br from-yellow-50 to-yellow-100'
+                                                                : 'border-red-200 bg-red-50 hover:border-red-300'
+                                                        }`}
+                                                    >
+                                                        {hasTrophy && (
+                                                            <div className="absolute -top-3 -right-3">
+                                                                <Trophy className="text-yellow-500" size={32} fill="currentColor" />
+                                                            </div>
+                                                        )}
+
+                                                        <div className="text-center">
+                                                            <div className="text-2xl font-bold text-gray-800 mb-2">
+                                                                {table}'s
+                                                            </div>
+
+                                                            <div className="relative w-full h-3 bg-gray-200 rounded-full overflow-hidden mb-2">
+                                                                <div
+                                                                    className={`h-full transition-all ${
+                                                                        mastery === 100 ? 'bg-yellow-500' : 'bg-red-500'
+                                                                    }`}
+                                                                    style={{ width: `${mastery}%` }}
+                                                                />
+                                                            </div>
+
+                                                            <div className="text-lg font-bold text-gray-700">
+                                                                {mastery}/100
+                                                            </div>
+
+                                                            {tableProgress.total > 0 && (
+                                                                <div className="text-xs text-gray-600 mt-1">
+                                                                    ✓ {tableProgress.correct}/{tableProgress.total}
+                                                                    {avgTime !== null && `, ⏱ ${avgTime.toFixed(1)}s`}
+                                                                </div>
+                                                            )}
+
+                                                            <div className={`mt-2 text-sm font-bold ${
+                                                                isEarned ? 'text-green-700' : 'text-gray-500'
+                                                            }`}>
+                                                                {isEarned ? '✓ ' : ''}${rewardAmount.toFixed(2)} {isEarned ? 'earned!' : 'reward'}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-8 text-center text-sm text-gray-500">
+                                        <p>Practice problems to increase mastery. Reach 100/100 to earn a trophy! 🏆</p>
+                                        <p className="mt-2">Trophies are permanent once earned.</p>
+                                    </div>
+
+                                    <div className="mt-6 text-center">
+                                        <button
+                                            onClick={resetProgress}
+                                            className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors"
+                                        >
+                                            Reset All Progress
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Parent Mode Modal */}
+                        {showParentMode && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                                <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                                    <div className="p-6">
+                                        <div className="flex items-center justify-between mb-6">
+                                            <h2 className="text-2xl font-bold text-gray-800">👤 Parent Mode</h2>
+                                            <button
+                                                onClick={closeParentMode}
+                                                className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+
+                                        {!parentModeUnlocked ? (
+                                            <div className="text-center py-8">
+                                                <p className="text-gray-600 mb-4">Enter passcode to access parent mode</p>
+                                                <input
+                                                    type="password"
+                                                    value={parentPasscode}
+                                                    onChange={(e) => setParentPasscode(e.target.value)}
+                                                    onKeyPress={(e) => e.key === 'Enter' && checkPasscode()}
+                                                    className="text-2xl text-center border-2 border-gray-300 rounded-lg p-3 w-48 mx-auto block focus:outline-none focus:border-purple-500 mb-4"
+                                                    placeholder="••••"
+                                                    autoFocus
+                                                />
+                                                <button
+                                                    onClick={checkPasscode}
+                                                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg transition-colors"
+                                                >
+                                                    Unlock
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div>
+                                                <p className="text-gray-600 mb-4 text-center">Click on any category to manually award or remove trophy</p>
+                                                
+                                                {/* Easy */}
+                                                <div className="mb-6">
+                                                    <h3 className="text-lg font-bold text-green-700 mb-3">Easy ($0.50 each)</h3>
+                                                    <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
+                                                        {[2, 3, 4, 5, 10].map(table => {
+                                                            const hasTrophy = progress[table].hasTrophy;
+                                                            return (
+                                                                <button
+                                                                    key={table}
+                                                                    onClick={() => toggleTrophy(table)}
+                                                                    className={`relative border-2 rounded-lg p-3 transition-all ${
+                                                                        hasTrophy
+                                                                            ? 'border-yellow-400 bg-yellow-50'
+                                                                            : 'border-gray-300 bg-white hover:border-green-400'
+                                                                    }`}
+                                                                >
+                                                                    <div className="text-center">
+                                                                        <div className="text-xl font-bold text-gray-800">{table}'s</div>
+                                                                        {hasTrophy && <div className="text-2xl mt-1">🏆</div>}
+                                                                    </div>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+
+                                                {/* Medium */}
+                                                <div className="mb-6">
+                                                    <h3 className="text-lg font-bold text-orange-700 mb-3">Medium ($1.00 each)</h3>
+                                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                                        {[6, 7, 8, 9].map(table => {
+                                                            const hasTrophy = progress[table].hasTrophy;
+                                                            return (
+                                                                <button
+                                                                    key={table}
+                                                                    onClick={() => toggleTrophy(table)}
+                                                                    className={`relative border-2 rounded-lg p-3 transition-all ${
+                                                                        hasTrophy
+                                                                            ? 'border-yellow-400 bg-yellow-50'
+                                                                            : 'border-gray-300 bg-white hover:border-orange-400'
+                                                                    }`}
+                                                                >
+                                                                    <div className="text-center">
+                                                                        <div className="text-xl font-bold text-gray-800">{table}'s</div>
+                                                                        {hasTrophy && <div className="text-2xl mt-1">🏆</div>}
+                                                                    </div>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+
+                                                {/* Hard */}
+                                                <div className="mb-6">
+                                                    <h3 className="text-lg font-bold text-red-700 mb-3">Hard ($2.00 each)</h3>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        {[11, 12].map(table => {
+                                                            const hasTrophy = progress[table].hasTrophy;
+                                                            return (
+                                                                <button
+                                                                    key={table}
+                                                                    onClick={() => toggleTrophy(table)}
+                                                                    className={`relative border-2 rounded-lg p-3 transition-all ${
+                                                                        hasTrophy
+                                                                            ? 'border-yellow-400 bg-yellow-50'
+                                                                            : 'border-gray-300 bg-white hover:border-red-400'
+                                                                    }`}
+                                                                >
+                                                                    <div className="text-center">
+                                                                        <div className="text-xl font-bold text-gray-800">{table}'s</div>
+                                                                        {hasTrophy && <div className="text-2xl mt-1">🏆</div>}
+                                                                    </div>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+
+                                                <div className="bg-green-100 border-2 border-green-400 rounded-lg p-4 text-center">
+                                                    <div className="text-sm font-semibold text-gray-600">Total Rewards</div>
+                                                    <div className="text-3xl font-bold text-green-700">
+                                                        ${calculateTotalRewards().toFixed(2)}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<MultiplicationMaster />, document.getElementById('root'));
+    </script>
+</body>
+</html>
