@@ -7,6 +7,7 @@ PASSCODE="${PARENT_PASSCODE:-0000}"
 mkdir -p public
 mkdir -p public/multiplication
 mkdir -p public/squares
+mkdir -p public/powers2
 
 # Copy main index.html
 cp index.html public/index.html
@@ -16,6 +17,9 @@ sed "s/__PARENT_PASSCODE__/$PASSCODE/g" multiplication/index.html > public/multi
 
 # Copy squares index.html
 cp squares/index.html public/squares/index.html
+
+# Copy powers2 index.html
+cp powers2/index.html public/powers2/index.html
 
 echo "Build complete. Passcode injected for multiplication mode."
 
