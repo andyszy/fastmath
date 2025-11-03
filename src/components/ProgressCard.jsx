@@ -59,27 +59,17 @@ export const ProgressCard = ({
           </div>
         )}
 
-        {!hasTrophy ? (
-          <div className="my-3">
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <span className="text-lg">🔥</span>
-              <div className="flex-1 max-w-[120px] h-3 bg-gray-300 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-orange-500 transition-all duration-300"
-                  style={{ width: `${(streak / 10) * 100}%` }}
-                />
-              </div>
-              <span className="text-lg">🏆</span>
-            </div>
-            <div className="text-sm font-semibold text-gray-600">
-              {streak}/10
-            </div>
+        <div className="my-3">
+          <div className="w-full max-w-[140px] mx-auto h-3 bg-gray-300 rounded-full overflow-hidden mb-2">
+            <div 
+              className="h-full bg-orange-500 transition-all duration-300"
+              style={{ width: `${(streak / 10) * 100}%` }}
+            />
           </div>
-        ) : (
-          <div className="text-xl font-bold text-yellow-600 my-2">
-            🏆 Mastered!
+          <div className="text-base font-semibold text-gray-700">
+            {hasTrophy ? '🏆' : '🔥'} {streak}/10
           </div>
-        )}
+        </div>
 
         {total > 0 && (
           <div className="text-xs text-gray-600 mt-1">
