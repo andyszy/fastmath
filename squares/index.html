@@ -25,6 +25,20 @@
         input[type="number"] {
             -moz-appearance: textfield;
         }
+        .sqrt {
+            display: inline-flex;
+            align-items: center;
+            position: relative;
+        }
+        .sqrt-symbol {
+            font-size: 1em;
+            line-height: 1;
+        }
+        .sqrt-radicand {
+            border-top: 6px solid currentColor;
+            padding: 0 0.2em;
+            margin-left: -0.1em;
+        }
     </style>
 </head>
 <body>
@@ -148,14 +162,14 @@
                     return {
                         number: selectedNumber,
                         type: 'square',
-                        question: `${selectedNumber}²`,
+                        questionText: `${selectedNumber}²`,
                         answer: squared
                     };
                 } else {
                     return {
                         number: selectedNumber,
                         type: 'root',
-                        question: `√${squared}`,
+                        questionText: squared, // Store the radicand number
                         answer: selectedNumber
                     };
                 }
@@ -255,7 +269,10 @@
                     setFeedback(`✓ Correct! ${streakText}`);
                 } else {
                     setStreak(0);
-                    setFeedback(`✗ Not quite. ${currentProblem.question} = ${currentProblem.answer}\n🥶 Reset streak to 0`);
+                    const wrongQuestion = currentProblem.type === 'square' 
+                        ? currentProblem.questionText 
+                        : `√${currentProblem.questionText}`;
+                    setFeedback(`✗ Not quite. ${wrongQuestion} = ${currentProblem.answer}\n🥶 Reset streak to 0`);
                 }
 
                 // Move to next problem after short delay
@@ -398,7 +415,17 @@
                                             {currentProblem && (
                                                 <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl p-8 text-center">
                                                     <div className="text-5xl font-bold text-gray-800 mb-6">
-                                                        {currentProblem.question} = ?
+                                                        {currentProblem.type === 'square' ? (
+                                                            <>{currentProblem.questionText} = ?</>
+                                                        ) : (
+                                                            <>
+                                                                <span className="sqrt">
+                                                                    <span className="sqrt-symbol">√</span>
+                                                                    <span className="sqrt-radicand">{currentProblem.questionText}</span>
+                                                                </span>
+                                                                {' = ?'}
+                                                            </>
+                                                        )}
                                                     </div>
 
                                                     <input
