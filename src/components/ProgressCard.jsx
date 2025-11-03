@@ -61,17 +61,13 @@ export const ProgressCard = ({
 
         {!hasTrophy ? (
           <div className="my-3">
-            <div className="flex items-center justify-center gap-1 mb-1">
+            <div className="flex items-center justify-center gap-2 mb-1">
               <span className="text-lg">🔥</span>
-              <div className="flex gap-0.5">
-                {[...Array(10)].map((_, i) => (
-                  <div
-                    key={i}
-                    className={`w-3 h-3 rounded-full ${
-                      i < streak ? 'bg-orange-500' : 'bg-gray-300'
-                    }`}
-                  />
-                ))}
+              <div className="flex-1 max-w-[120px] h-3 bg-gray-300 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-orange-500 transition-all duration-300"
+                  style={{ width: `${(streak / 10) * 100}%` }}
+                />
               </div>
               <span className="text-lg">🏆</span>
             </div>
