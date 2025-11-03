@@ -67,7 +67,7 @@ export const ProgressCard = ({
             />
           </div>
           <div className="text-base font-semibold text-gray-700">
-            {hasTrophy ? '🏆' : '🔥'} {streak}/10
+            {hasTrophy ? '🏆' : (streak > 0 ? '🔥' : '')} {streak}/10
           </div>
         </div>
 
