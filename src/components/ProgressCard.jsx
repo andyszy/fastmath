@@ -60,8 +60,24 @@ export const ProgressCard = ({
         )}
 
         {!hasTrophy ? (
-          <div className="text-2xl font-bold text-gray-700 my-2">
-            🔥 {streak}/10
+          <div className="my-3">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <span className="text-lg">🔥</span>
+              <div className="flex gap-0.5">
+                {[...Array(10)].map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-3 h-3 rounded-full ${
+                      i < streak ? 'bg-orange-500' : 'bg-gray-300'
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className="text-lg">🏆</span>
+            </div>
+            <div className="text-sm font-semibold text-gray-600">
+              {streak}/10
+            </div>
           </div>
         ) : (
           <div className="text-xl font-bold text-yellow-600 my-2">
