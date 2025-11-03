@@ -45,7 +45,7 @@ export const ProgressCard = ({
     <div className={`relative border-2 rounded-xl p-4 transition-all ${color.border} ${color.bg} ${color.hover}`}>
       {hasTrophy && (
         <div className="absolute -top-3 -right-3">
-          <Trophy className="text-yellow-500" size={32} fill="currentColor" />
+          <Trophy className="text-yellow-500" size={32} weight="fill" />
         </div>
       )}
 
