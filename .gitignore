@@ -1,2 +1,10 @@
 .vercel
 public
+node_modules
+dist
+*.log
+index-old.html
+multiplication/
+squares/
+powers2/
+build.sh

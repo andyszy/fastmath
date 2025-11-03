@@ -4,87 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FastMath - Practice Hub</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body {
-            margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-                sans-serif;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-    </style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-    <div class="max-w-4xl w-full">
-        <div class="text-center mb-8">
-            <h1 class="text-5xl font-bold text-gray-800 mb-4">⚡ FastMath</h1>
-            <p class="text-xl text-gray-600">Choose your practice mode</p>
-        </div>
-
-        <div class="grid md:grid-cols-3 gap-6">
-            <!-- Multiplication -->
-            <a href="/multiplication/" class="block bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow group">
-                <div class="text-center">
-                    <div class="text-6xl mb-4">✖️</div>
-                    <h2 class="text-3xl font-bold text-gray-800 mb-3 group-hover:text-indigo-600 transition-colors">Multiplication</h2>
-                    <p class="text-gray-600 mb-4">Master multiplication tables 2-12 with spaced repetition</p>
-                    <div class="flex flex-wrap gap-2 justify-center text-sm">
-                        <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full font-semibold">Easy</span>
-                        <span class="bg-orange-100 text-orange-700 px-3 py-1 rounded-full font-semibold">Medium</span>
-                        <span class="bg-red-100 text-red-700 px-3 py-1 rounded-full font-semibold">Hard</span>
-                    </div>
-                    <div class="mt-4 text-sm text-gray-500">
-                        Earn up to $9.50 in rewards
-                    </div>
-                </div>
-            </a>
-
-            <!-- Squares -->
-            <a href="/squares/" class="block bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow group">
-                <div class="text-center">
-                    <div class="text-6xl mb-4">²√</div>
-                    <h2 class="text-3xl font-bold text-gray-800 mb-3 group-hover:text-purple-600 transition-colors">Squares & Roots</h2>
-                    <p class="text-gray-600 mb-4">Learn squares 1² through 12² and their roots</p>
-                    <div class="flex flex-wrap gap-2 justify-center text-sm">
-                        <span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full font-semibold">1² to 12²</span>
-                        <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-semibold">Square Roots</span>
-                    </div>
-                    <div class="mt-4 text-sm text-gray-500">
-                        Earn up to $6.00 in rewards
-                    </div>
-                </div>
-            </a>
-
-            <!-- Powers of 2 -->
-            <a href="/powers2/" class="block bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow group">
-                <div class="text-center">
-                    <div class="text-6xl mb-4">2ⁿ</div>
-                    <h2 class="text-3xl font-bold text-gray-800 mb-3 group-hover:text-cyan-600 transition-colors">Powers of 2</h2>
-                    <p class="text-gray-600 mb-4">Master 2⁰ through 2¹⁶ and their roots</p>
-                    <div class="flex flex-wrap gap-2 justify-center text-sm">
-                        <span class="bg-cyan-100 text-cyan-700 px-3 py-1 rounded-full font-semibold">2⁰ to 2¹⁶</span>
-                        <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-semibold">Roots</span>
-                    </div>
-                    <div class="mt-4 text-sm text-gray-500">
-                        Earn up to $8.50 in rewards
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="mt-8 text-center text-sm text-gray-500">
-            <a 
-                href="https://github.com/andyszy/fastmath" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                class="hover:text-indigo-600 transition-colors"
-            >
-                View on GitHub
-            </a>
-        </div>
-    </div>
+<body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
 
